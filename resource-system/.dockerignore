@@ -1,0 +1,11 @@
+# ─────────────────────────────────────────────────────────────
+# .dockerignore  — place in your Spring Boot project root
+# Keeps the Docker build context small and fast
+# ─────────────────────────────────────────────────────────────
+target/
+*.iml
+.idea/
+.git/
+.gitignore
+*.md
+node_modules/
