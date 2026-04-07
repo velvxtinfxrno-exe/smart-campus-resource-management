@@ -8,7 +8,7 @@ import axios from 'axios'
 //                  Environment Variables → VITE_API_BASE
 //                  Value: https://your-app.onrender.com/api
 // ─────────────────────────────────────────────────────────────
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
+const BASE = 'https://smart-campus-resource-management.onrender.com/api'
 
 const api = axios.create({
   baseURL: BASE,
