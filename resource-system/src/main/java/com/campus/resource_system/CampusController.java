@@ -1,16 +1,35 @@
 package com.campus.resource_system;
 
-import com.campus.resource_system.model.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.annotation.PostConstruct;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.campus.resource_system.model.Allocation;
+import com.campus.resource_system.model.Department;
+import com.campus.resource_system.model.LabKit;
+import com.campus.resource_system.model.Laptop;
+import com.campus.resource_system.model.Projector;
+import com.campus.resource_system.model.Resource;
+
+import jakarta.annotation.PostConstruct;
+
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "*") // <--- THIS ALLOWS VERCEL TO CONNECT
 public class CampusController {
 
     private Resource[] resources = new Resource[50];
