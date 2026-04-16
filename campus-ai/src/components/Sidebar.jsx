@@ -84,7 +84,7 @@ export function Sidebar() {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow shrink-0" />
           <div className="sidebar-footer-text min-w-0">
             <p className="text-[10px] font-body text-surface-500 leading-none">Backend</p>
-            <p className="font-mono text-[10px] text-surface-400 mt-0.5 truncate">:8080</p>
+            <p className="font-mono text-[10px] text-surface-400 mt-0.5 truncate">Render Cloud</p>
           </div>
         </div>
       </div>
