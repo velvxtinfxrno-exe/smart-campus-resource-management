@@ -12,7 +12,7 @@ const BASE = 'https://smart-campus-resource-management.onrender.com/api'
 
 const api = axios.create({
   baseURL: BASE,
-  timeout: 15000,  // Render free tier can cold-start in ~30s on first request
+  timeout: 60000,  // Render free tier can cold-start in ~30s on first request
 })
 
 // Intercept every error response and attach a clean human-readable message
