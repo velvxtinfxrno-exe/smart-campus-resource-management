@@ -1,29 +1,32 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ToastProvider } from './components/ToastProvider'
-import { Background }    from './components/Background'
+import { ToastProvider }    from './components/ToastProvider'
+import { Background }       from './components/Background'
 import { Sidebar, BottomNav } from './components/Sidebar'
-import { Header }        from './components/Header'
-import { StatsGrid }     from './components/StatsGrid'
+import { Header }           from './components/Header'
+import { StatsGrid }        from './components/StatsGrid'
 import { UtilizationChart } from './components/UtilizationChart'
-import { AllocateForm }  from './components/AllocateForm'
-import { ReleaseForm }   from './components/ReleaseForm'
-import { ResourceTable } from './components/ResourceTable'
-import { StatsPage }     from './pages/StatsPage'
-import { AboutPage }     from './pages/AboutPage'
-import { useResources }  from './hooks/useResources'
-import { useStatsHistory } from './hooks/useStatsHistory'
+import { AllocateForm }     from './components/AllocateForm'
+import { ReleaseForm }      from './components/ReleaseForm'
+import { ResourceTable }    from './components/ResourceTable'
+import { StatsPage }        from './pages/StatsPage'
+import { HistoryPage }      from './pages/HistoryPage'
+import { ManagePage }       from './pages/ManagePage'
+import { AboutPage }        from './pages/AboutPage'
+import { useResources }     from './hooks/useResources'
+import { useStatsHistory }  from './hooks/useStatsHistory'
+import { useTheme }         from './hooks/useTheme'
 
-const pageVariants = {
+const pv = {
   initial: { opacity: 0, y: 10, filter: 'blur(3px)' },
   animate: { opacity: 1, y: 0,  filter: 'blur(0px)' },
   exit:    { opacity: 0, y: -6, filter: 'blur(3px)' },
 }
-const pageTx = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
+const pt = { duration: 0.3, ease: [0.22,1,0.36,1] }
 
-// ── Dashboard ─────────────────────────────────────────────────
-function Dashboard({ statsHistory }) {
+// ── Dashboard ────────────────────────────────────────────────
+function Dashboard({ statsHistory, theme, onToggleTheme }) {
   const { resources, loading, actionLoading, error, stats, fetchResources, allocate, release } =
     useResources({ onAction: statsHistory.record })
 
@@ -34,59 +37,57 @@ function Dashboard({ statsHistory }) {
   }, [fetchResources])
 
   return (
-    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTx}>
+    <motion.div variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
       <div className="content-container py-6 sm:py-8">
-        <Header onRefresh={() => fetchResources()} loading={loading} />
+        <Header onRefresh={() => fetchResources()} loading={loading}
+          theme={theme} onToggleTheme={onToggleTheme} />
         <StatsGrid stats={stats} loading={loading} />
         <UtilizationChart stats={stats} loading={loading} />
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-6 sm:mb-8">
           <AllocateForm resources={resources} onAllocate={allocate} loading={actionLoading} />
           <ReleaseForm  resources={resources} onRelease={release}   loading={actionLoading} />
         </div>
-
         <ResourceTable resources={resources} loading={loading} error={error} />
-
-        <p className="text-center text-xs text-surface-600 font-body mt-8 pb-4">
-          Campus Resource Management System
+        <p className="text-center text-xs mt-8 pb-4" style={{ color: 'var(--text-muted)' }}>
+          Smart Campus Resource Management System
         </p>
       </div>
     </motion.div>
   )
 }
 
-// ── Routed views ──────────────────────────────────────────────
-function AnimatedRoutes({ statsHistory }) {
-  const location = useLocation()
+// ── Wrap each page with fade transition ─────────────────────
+function Page({ children }) {
+  return (
+    <motion.div variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
+      {children}
+    </motion.div>
+  )
+}
 
-  // Keep a live snapshot of current stats for the radial gauge on StatsPage
+// ── Routed views ─────────────────────────────────────────────
+function AnimatedRoutes({ statsHistory, theme, onToggleTheme }) {
+  const location = useLocation()
   const { stats: currentStats, fetchResources } = useResources()
   useEffect(() => { fetchResources() }, [fetchResources])
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Dashboard statsHistory={statsHistory} />} />
-
-        <Route path="/stats" element={
-          <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTx}>
-            <StatsPage statsHistory={statsHistory} currentStats={currentStats} />
-          </motion.div>
-        } />
-
-        <Route path="/about" element={
-          <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTx}>
-            <AboutPage />
-          </motion.div>
-        } />
+        <Route path="/"        element={<Dashboard statsHistory={statsHistory} theme={theme} onToggleTheme={onToggleTheme} />} />
+        <Route path="/stats"   element={<Page><StatsPage statsHistory={statsHistory} currentStats={currentStats} /></Page>} />
+        <Route path="/history" element={<Page><HistoryPage /></Page>} />
+        <Route path="/manage"  element={<Page><ManagePage /></Page>} />
+        <Route path="/about"   element={<Page><AboutPage /></Page>} />
       </Routes>
     </AnimatePresence>
   )
 }
 
-// ── Root ──────────────────────────────────────────────────────
+// ── Root ─────────────────────────────────────────────────────
 export default function App() {
   const statsHistory = useStatsHistory()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <BrowserRouter>
@@ -95,7 +96,11 @@ export default function App() {
         <div className="app-shell">
           <Sidebar />
           <main className="app-main">
-            <AnimatedRoutes statsHistory={statsHistory} />
+            <AnimatedRoutes
+              statsHistory={statsHistory}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
           </main>
           <BottomNav />
         </div>
