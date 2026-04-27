@@ -3,19 +3,32 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Zap, Unlock, Plus, Trash2, Edit3, Search, X, Download } from 'lucide-react'
 import { historyApi, insightsApi } from '../lib/api'
 
-const ACTION_CONFIG = {
-  ALLOCATE: { icon: Zap,     color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.3)', label: 'Allocated'  },
-  RELEASE:  { icon: Unlock,  color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)',  label: 'Released'   },
-  ADD:      { icon: Plus,    color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)',  label: 'Added'      },
-  DELETE:   { icon: Trash2,  color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)', label: 'Deleted'    },
-  UPDATE:   { icon: Edit3,   color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)',  label: 'Updated'    },
+// Returns config for a given action string — function instead of
+// module-level object with JSX values (fixes Rollup tree-shake error)
+function getActionCfg(action) {
+  switch (action) {
+    case 'ALLOCATE': return { Icon: Zap,    color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.3)', label: 'Allocated' }
+    case 'RELEASE':  return { Icon: Unlock, color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)',  label: 'Released'  }
+    case 'ADD':      return { Icon: Plus,   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)',  label: 'Added'     }
+    case 'DELETE':   return { Icon: Trash2, color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)', label: 'Deleted'   }
+    case 'UPDATE':   return { Icon: Edit3,  color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)',  label: 'Updated'   }
+    default:         return { Icon: Clock,  color: '#94a3b8', bg: 'rgba(148,163,184,0.1)',  border: 'rgba(148,163,184,0.2)', label: action      }
+  }
 }
-const DEFAULT_CFG = { icon: Clock, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', label: 'Action' }
+
+const FILTER_LABELS = {
+  ALL:      'All',
+  ALLOCATE: 'Allocated',
+  RELEASE:  'Released',
+  ADD:      'Added',
+  UPDATE:   'Updated',
+  DELETE:   'Deleted',
+}
 
 const fadeUp = (d = 0) => ({
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay: d, ease: [0.22,1,0.36,1] },
+  transition: { duration: 0.4, delay: d, ease: [0.22, 1, 0.36, 1] },
 })
 
 export function HistoryPage() {
@@ -49,19 +62,25 @@ export function HistoryPage() {
       const blob = await insightsApi.report()
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
-      a.href = url; a.download = 'campus-report.txt'; a.click()
+      a.href = url
+      a.download = 'campus-report.txt'
+      a.click()
       URL.revokeObjectURL(url)
-    } catch { alert('Could not download report. Try again.') }
+    } catch {
+      alert('Could not download report. Try again.')
+    }
   }
 
   const FILTERS = ['ALL', 'ALLOCATE', 'RELEASE', 'ADD', 'UPDATE', 'DELETE']
 
   return (
     <div className="content-container py-6 sm:py-8">
-      {/* Header */}
+
+      {/* Page header */}
       <motion.div {...fadeUp(0)} className="flex items-center justify-between mb-6 sm:mb-8">
         <div>
-          <h1 className="font-display font-bold text-xl sm:text-2xl leading-tight tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="font-display font-bold text-xl sm:text-2xl leading-tight tracking-tight"
+            style={{ color: 'var(--text-primary)' }}>
             History
           </h1>
           <p className="text-xs font-body mt-1" style={{ color: 'var(--text-muted)' }}>
@@ -71,7 +90,12 @@ export function HistoryPage() {
         <motion.button onClick={handleDownload}
           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-body transition-all"
-          style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', minHeight: 40 }}>
+          style={{
+            background: 'rgba(99,102,241,0.1)',
+            border: '1px solid rgba(99,102,241,0.25)',
+            color: '#818cf8',
+            minHeight: 40,
+          }}>
           <Download size={13} /> Download Report
         </motion.button>
       </motion.div>
@@ -79,17 +103,23 @@ export function HistoryPage() {
       {/* Filter chips */}
       <motion.div {...fadeUp(0.08)} className="flex flex-wrap gap-2 mb-4">
         {FILTERS.map(f => {
-          const cfg = ACTION_CONFIG[f] || { color: '#94a3b8' }
+          const cfg    = getActionCfg(f)
           const active = filter === f
           return (
             <button key={f} onClick={() => setFilter(f)}
               className="px-3 py-1.5 rounded-xl text-xs font-display font-semibold transition-all"
               style={{
-                background: active ? (f === 'ALL' ? 'rgba(99,102,241,0.2)' : cfg.bg) : 'var(--bg-surface-2)',
-                border: `1px solid ${active ? (f === 'ALL' ? 'rgba(99,102,241,0.4)' : cfg.border) : 'var(--border-soft)'}`,
-                color: active ? (f === 'ALL' ? '#818cf8' : cfg.color) : 'var(--text-muted)',
+                background: active
+                  ? (f === 'ALL' ? 'rgba(99,102,241,0.2)' : cfg.bg)
+                  : 'var(--bg-surface-2)',
+                border: `1px solid ${active
+                  ? (f === 'ALL' ? 'rgba(99,102,241,0.4)' : cfg.border)
+                  : 'var(--border-soft)'}`,
+                color: active
+                  ? (f === 'ALL' ? '#818cf8' : cfg.color)
+                  : 'var(--text-muted)',
               }}>
-              {f === 'ALL' ? 'All' : (ACTION_CONFIG[f]?.label || f)}
+              {FILTER_LABELS[f] || f}
             </button>
           )
         })}
@@ -97,12 +127,18 @@ export function HistoryPage() {
 
       {/* Search */}
       <motion.div {...fadeUp(0.12)} className="relative mb-5">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
-        <input type="text" placeholder="Search by resource, department, action…"
-          value={search} onChange={e => setSearch(e.target.value)}
-          className="input-field pl-9 py-2.5 text-sm" />
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: 'var(--text-muted)' }} />
+        <input
+          type="text"
+          placeholder="Search by resource, department, action…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="input-field pl-9 py-2.5 text-sm"
+        />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"
+          <button onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
             style={{ color: 'var(--text-muted)' }}>
             <X size={13} />
           </button>
@@ -114,13 +150,13 @@ export function HistoryPage() {
         <motion.p {...fadeUp(0.14)} className="text-xs font-body mb-4"
           style={{ color: 'var(--text-muted)' }}>
           {filtered.length} event{filtered.length !== 1 ? 's' : ''}
-          {filter !== 'ALL' && ` · filtered by ${filter}`}
+          {filter !== 'ALL' && ` · filtered by ${FILTER_LABELS[filter]}`}
         </motion.p>
       )}
 
-      {/* Content */}
-      {loading ? (
-        <div className="glass-card rounded-2xl p-6 space-y-3">
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="glass-card rounded-2xl p-5 space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex gap-3">
               <div className="w-8 h-8 rounded-xl shimmer-line shrink-0" />
@@ -131,11 +167,17 @@ export function HistoryPage() {
             </div>
           ))}
         </div>
-      ) : error ? (
+      )}
+
+      {/* Error */}
+      {!loading && error && (
         <motion.div {...fadeUp(0.15)} className="glass-card rounded-2xl p-10 text-center">
           <p style={{ color: 'var(--text-muted)' }}>{error}</p>
         </motion.div>
-      ) : filtered.length === 0 ? (
+      )}
+
+      {/* Empty */}
+      {!loading && !error && filtered.length === 0 && (
         <motion.div {...fadeUp(0.15)} className="glass-card rounded-2xl p-10 text-center">
           <Clock size={32} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--text-muted)' }} />
           <p style={{ color: 'var(--text-muted)' }}>No history entries yet.</p>
@@ -143,25 +185,32 @@ export function HistoryPage() {
             Actions you perform on the Dashboard will appear here.
           </p>
         </motion.div>
-      ) : (
+      )}
+
+      {/* Entries list */}
+      {!loading && !error && filtered.length > 0 && (
         <motion.div {...fadeUp(0.15)} className="glass-card rounded-2xl overflow-hidden">
           <div className="divide-y" style={{ borderColor: 'var(--border-soft)' }}>
             <AnimatePresence mode="popLayout">
               {filtered.map((entry, i) => {
-                const cfg = ACTION_CONFIG[entry.action] || DEFAULT_CFG
-                const Icon = cfg.icon
+                const cfg  = getActionCfg(entry.action)
+                const Icon = cfg.Icon
                 return (
-                  <motion.div key={`${entry.timestamp}-${i}`}
-                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                  <motion.div
+                    key={`${entry.timestamp}-${i}`}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: Math.min(i * 0.03, 0.3) }}
                     className="flex items-start gap-3 px-4 sm:px-5 py-3.5 transition-colors"
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.03)'}
-                    onMouseLeave={e => e.currentTarget.style.background = ''}>
-                    {/* Icon */}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}
+                  >
+                    {/* Icon badge */}
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                       style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
                       <Icon size={13} style={{ color: cfg.color }} />
                     </div>
+
                     {/* Body */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -194,8 +243,10 @@ export function HistoryPage() {
                         )}
                       </div>
                     </div>
+
                     {/* Timestamp */}
-                    <span className="font-mono text-[10px] shrink-0 mt-1" style={{ color: 'var(--text-muted)' }}>
+                    <span className="font-mono text-[10px] shrink-0 mt-1"
+                      style={{ color: 'var(--text-muted)' }}>
                       {entry.timestamp}
                     </span>
                   </motion.div>

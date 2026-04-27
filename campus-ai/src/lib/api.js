@@ -1,61 +1,53 @@
 import axios from 'axios'
 
-// ─────────────────────────────────────────────────────────────
-// CONFIGURATION
-//
-//  Local dev  →  uses http://localhost:8080/api  (no env file needed)
-//  Vercel     →  set VITE_API_BASE in Vercel dashboard:
-//                  Environment Variables → VITE_API_BASE
-//                  Value: https://your-app.onrender.com/api
-// ─────────────────────────────────────────────────────────────
-const BASE = 'https://smart-campus-resource-management.onrender.com/api'
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
 
 const api = axios.create({
   baseURL: BASE,
-  timeout: 60000,  // Render free tier can cold-start in ~30s on first request
+  timeout: 15000,
+  // NOTE: withCredentials removed — add back only when backend has session auth (Phase 3)
 })
 
-// Intercept every error response and attach a clean human-readable message
 api.interceptors.response.use(
   res => res,
   err => {
-    const data  = err?.response?.data
+    const data   = err?.response?.data
     const status = err?.response?.status
-    let message = 'An unexpected error occurred.'
+    let message  = 'An unexpected error occurred.'
 
-    if (typeof data === 'string' && data.trim()) {
-      message = data.trim()
-    } else if (data?.message) {
-      message = data.message
-    } else if (status === 400) {
-      message = 'Bad request — please check your inputs.'
-    } else if (status === 404) {
-      message = 'Resource not found on the server.'
-    } else if (status === 500) {
-      message = 'Server error — please try again later.'
-    } else if (!err.response) {
-      message = 'Cannot reach the server. It may be starting up — please wait a moment and retry.'
-    }
+    if (data?.message)                              message = data.message
+    else if (typeof data === 'string' && data.trim()) message = data.trim()
+    else if (status === 400) message = 'Bad request — check your inputs.'
+    else if (status === 401) message = 'Please log in first.'
+    else if (status === 403) message = 'Admin access required.'
+    else if (status === 404) message = 'Not found on the server.'
+    else if (status === 500) message = 'Server error — try again later.'
+    else if (!err.response)  message = 'Cannot reach server. It may be starting up — wait a moment and retry.'
 
     err.uiMessage = message
     return Promise.reject(err)
   }
 )
 
+// ── Resources ─────────────────────────────────────────────────
 export const resourcesApi = {
-  getAll: () => api.get('/resources').then(r => r.data),
+  getAll:   ()                                           => api.get('/resources').then(r => r.data),
+  add:      (name, type, location, detail, totalQty)    => api.post('/resources/add',    null, { params: { name, type, location, detail, totalQty } }).then(r => r.data),
+  update:   (resId, name, type, location, detail, qty)  => api.post('/resources/update', null, { params: { resId, name, type, location, detail, totalQty: qty } }).then(r => r.data),
+  remove:   (resId)                                      => api.post('/resources/delete', null, { params: { resId } }).then(r => r.data),
+  allocate: (resId, deptId, date, qty = 1)              => api.post('/allocate', null, { params: { resId, deptId, date, qty } }).then(r => r.data),
+  release:  (resId, qty = 1)                            => api.post('/release',  null, { params: { resId, qty } }).then(r => r.data),
+}
 
-  allocate: (resId, deptId, date) =>
-    api.post('/allocate', null, {
-      params: { resId, deptId, date },
-      responseType: 'text',
-    }).then(r => r.data),
+// ── History ───────────────────────────────────────────────────
+export const historyApi = {
+  getAll: () => api.get('/history').then(r => r.data),
+}
 
-  release: (resId) =>
-    api.post('/release', null, {
-      params: { resId },
-      responseType: 'text',
-    }).then(r => r.data),
+// ── Insights & Report ─────────────────────────────────────────
+export const insightsApi = {
+  get:    () => api.get('/insights').then(r => r.data),
+  report: () => api.get('/report', { responseType: 'blob' }).then(r => r.data),
 }
 
 export default api
