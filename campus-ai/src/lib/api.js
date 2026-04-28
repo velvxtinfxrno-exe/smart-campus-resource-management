@@ -5,7 +5,7 @@ const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
 const api = axios.create({
   baseURL: BASE,
   timeout: 15000,
-  // NOTE: withCredentials removed — add back only when backend has session auth (Phase 3)
+  withCredentials: true,   // required for session cookies (auth)
 })
 
 api.interceptors.response.use(
@@ -29,19 +29,35 @@ api.interceptors.response.use(
   }
 )
 
+// ── Auth ──────────────────────────────────────────────────────
+export const authApi = {
+  me:     ()                                               => api.get('/me').then(r => r.data),
+  login:  (username, password)                             => api.post('/login',  null, { params: { username, password } }).then(r => r.data),
+  signup: (username, password, fullName, department, role) => api.post('/signup', null, { params: { username, password, fullName, department, role } }).then(r => r.data),
+  logout: ()                                               => api.post('/logout').then(r => r.data),
+}
+
 // ── Resources ─────────────────────────────────────────────────
 export const resourcesApi = {
-  getAll:   ()                                           => api.get('/resources').then(r => r.data),
-  add:      (name, type, location, detail, totalQty)    => api.post('/resources/add',    null, { params: { name, type, location, detail, totalQty } }).then(r => r.data),
-  update:   (resId, name, type, location, detail, qty)  => api.post('/resources/update', null, { params: { resId, name, type, location, detail, totalQty: qty } }).then(r => r.data),
-  remove:   (resId)                                      => api.post('/resources/delete', null, { params: { resId } }).then(r => r.data),
-  allocate: (resId, deptId, date, qty = 1)              => api.post('/allocate', null, { params: { resId, deptId, date, qty } }).then(r => r.data),
-  release:  (resId, qty = 1)                            => api.post('/release',  null, { params: { resId, qty } }).then(r => r.data),
+  getAll:   ()                                          => api.get('/resources').then(r => r.data),
+  add:      (name, type, location, detail, totalQty)   => api.post('/resources/add',    null, { params: { name, type, location, detail, totalQty } }).then(r => r.data),
+  update:   (resId, name, type, location, detail, qty) => api.post('/resources/update', null, { params: { resId, name, type, location, detail, totalQty: qty } }).then(r => r.data),
+  remove:   (resId)                                     => api.post('/resources/delete', null, { params: { resId } }).then(r => r.data),
+  allocate: (resId, deptId, date, qty = 1)             => api.post('/allocate', null, { params: { resId, deptId, date, qty } }).then(r => r.data),
+  release:  (resId, qty = 1)                           => api.post('/release',  null, { params: { resId, qty } }).then(r => r.data),
 }
 
 // ── History ───────────────────────────────────────────────────
 export const historyApi = {
   getAll: () => api.get('/history').then(r => r.data),
+}
+
+// ── Bookings ──────────────────────────────────────────────────
+export const bookingsApi = {
+  getAll:   ()                                                    => api.get('/bookings').then(r => r.data),
+  create:   (resourceId, startDate, endDate, purpose)             => api.post('/bookings/create', null, { params: { resourceId, startDate, endDate, purpose } }).then(r => r.data),
+  cancel:   (bookingId)                                           => api.post('/bookings/cancel',  null, { params: { bookingId } }).then(r => r.data),
+  approve:  (bookingId)                                           => api.post('/bookings/approve', null, { params: { bookingId } }).then(r => r.data),
 }
 
 // ── Insights & Report ─────────────────────────────────────────
