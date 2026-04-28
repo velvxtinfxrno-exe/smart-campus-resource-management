@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin; // <--- ADDED IMPORT
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +41,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "https://smart-campus-resource-management-six.vercel.app", allowCredentials = "true") // <--- ADDED SECURITY BYPASS
 public class CampusController {
 
     // ── Fixed arrays (OOP + array data structures) ─────────────
