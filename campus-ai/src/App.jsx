@@ -13,19 +13,29 @@ import { ResourceTable }    from './components/ResourceTable'
 import { StatsPage }        from './pages/StatsPage'
 import { HistoryPage }      from './pages/HistoryPage'
 import { ManagePage }       from './pages/ManagePage'
+import { BookingsPage }     from './pages/BookingsPage'
 import { AboutPage }        from './pages/AboutPage'
+import { LoginPage }        from './pages/LoginPage'
 import { useResources }     from './hooks/useResources'
 import { useStatsHistory }  from './hooks/useStatsHistory'
 import { useTheme }         from './hooks/useTheme'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 
 const pv = {
   initial: { opacity: 0, y: 10, filter: 'blur(3px)' },
   animate: { opacity: 1, y: 0,  filter: 'blur(0px)' },
   exit:    { opacity: 0, y: -6, filter: 'blur(3px)' },
 }
-const pt = { duration: 0.3, ease: [0.22,1,0.36,1] }
+const pt = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
 
-// ── Dashboard ────────────────────────────────────────────────
+function Page({ children }) {
+  return (
+    <motion.div variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
+      {children}
+    </motion.div>
+  )
+}
+
 function Dashboard({ statsHistory, theme, onToggleTheme }) {
   const { resources, loading, actionLoading, error, stats, fetchResources, allocate, release } =
     useResources({ onAction: statsHistory.record })
@@ -37,7 +47,7 @@ function Dashboard({ statsHistory, theme, onToggleTheme }) {
   }, [fetchResources])
 
   return (
-    <motion.div variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
+    <Page>
       <div className="content-container py-6 sm:py-8">
         <Header onRefresh={() => fetchResources()} loading={loading}
           theme={theme} onToggleTheme={onToggleTheme} />
@@ -52,20 +62,10 @@ function Dashboard({ statsHistory, theme, onToggleTheme }) {
           Smart Campus Resource Management System
         </p>
       </div>
-    </motion.div>
+    </Page>
   )
 }
 
-// ── Wrap each page with fade transition ─────────────────────
-function Page({ children }) {
-  return (
-    <motion.div variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
-      {children}
-    </motion.div>
-  )
-}
-
-// ── Routed views ─────────────────────────────────────────────
 function AnimatedRoutes({ statsHistory, theme, onToggleTheme }) {
   const location = useLocation()
   const { stats: currentStats, fetchResources } = useResources()
@@ -74,37 +74,69 @@ function AnimatedRoutes({ statsHistory, theme, onToggleTheme }) {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/"        element={<Dashboard statsHistory={statsHistory} theme={theme} onToggleTheme={onToggleTheme} />} />
-        <Route path="/stats"   element={<Page><StatsPage statsHistory={statsHistory} currentStats={currentStats} /></Page>} />
-        <Route path="/history" element={<Page><HistoryPage /></Page>} />
-        <Route path="/manage"  element={<Page><ManagePage /></Page>} />
-        <Route path="/about"   element={<Page><AboutPage /></Page>} />
+        <Route path="/"         element={<Dashboard statsHistory={statsHistory} theme={theme} onToggleTheme={onToggleTheme} />} />
+        <Route path="/stats"    element={<Page><StatsPage statsHistory={statsHistory} currentStats={currentStats} /></Page>} />
+        <Route path="/history"  element={<Page><HistoryPage /></Page>} />
+        <Route path="/bookings" element={<Page><BookingsPage /></Page>} />
+        <Route path="/manage"   element={<Page><ManagePage /></Page>} />
+        <Route path="/about"    element={<Page><AboutPage /></Page>} />
       </Routes>
     </AnimatePresence>
   )
 }
 
-// ── Root ─────────────────────────────────────────────────────
+// Main authenticated layout
+function AppShell({ statsHistory, theme, onToggleTheme }) {
+  const { user, checking } = useAuth()
+
+  // While checking session cookie — show nothing to avoid flash
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full"
+        />
+      </div>
+    )
+  }
+
+  // Not logged in — show login page
+  if (!user) return <LoginPage />
+
+  // Logged in — show full app
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <main className="app-main">
+        <AnimatedRoutes
+          statsHistory={statsHistory}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
+        />
+      </main>
+      <BottomNav />
+    </div>
+  )
+}
+
 export default function App() {
   const statsHistory = useStatsHistory()
   const { theme, toggleTheme } = useTheme()
 
   return (
     <BrowserRouter>
-      <ToastProvider>
-        <Background />
-        <div className="app-shell">
-          <Sidebar />
-          <main className="app-main">
-            <AnimatedRoutes
-              statsHistory={statsHistory}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-            />
-          </main>
-          <BottomNav />
-        </div>
-      </ToastProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Background />
+          <AppShell
+            statsHistory={statsHistory}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

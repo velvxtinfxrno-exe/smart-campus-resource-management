@@ -1,16 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Cpu, LayoutDashboard, BarChart2, Clock, Settings2, Info } from 'lucide-react'
+import { Cpu, LayoutDashboard, BarChart2, Clock, Settings2, BookOpen, Info, LogOut } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 const NAV = [
-  { to: '/',        icon: LayoutDashboard, label: 'Dashboard',  end: true  },
-  { to: '/stats',   icon: BarChart2,       label: 'Statistics', end: false },
-  { to: '/history', icon: Clock,           label: 'History',    end: false },
-  { to: '/manage',  icon: Settings2,       label: 'Manage',     end: false },
-  { to: '/about',   icon: Info,            label: 'About',      end: false },
+  { to: '/',         icon: LayoutDashboard, label: 'Dashboard',  end: true  },
+  { to: '/stats',    icon: BarChart2,       label: 'Statistics', end: false },
+  { to: '/history',  icon: Clock,           label: 'History',    end: false },
+  { to: '/bookings', icon: BookOpen,        label: 'Bookings',   end: false },
+  { to: '/manage',   icon: Settings2,       label: 'Manage',     end: false },
+  { to: '/about',    icon: Info,            label: 'About',      end: false },
 ]
 
 export function Sidebar() {
+  const { user, logout } = useAuth()
+
   return (
     <aside className="app-sidebar select-none">
       {/* Logo */}
@@ -33,7 +37,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Nav items */}
+      {/* Nav */}
       <nav className="flex-1 px-2 pt-4 space-y-1 overflow-y-auto">
         <p className="sidebar-section-label label-text px-2 mb-3">Navigation</p>
         {NAV.map(({ to, icon: Icon, label, end }) => (
@@ -47,7 +51,7 @@ export function Sidebar() {
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }} />
                   )}
                 </AnimatePresence>
-                <div className={`sidebar-nav-item relative flex items-center gap-3 py-2.5 rounded-xl transition-colors duration-150`}
+                <div className="sidebar-nav-item relative flex items-center gap-3 py-2.5 rounded-xl transition-colors duration-150"
                   style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                   <Icon size={18} className="shrink-0" style={{ color: isActive ? '#818cf8' : undefined }} />
                   <span className="sidebar-label font-body text-sm font-medium whitespace-nowrap">{label}</span>
@@ -62,16 +66,28 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-2 py-3 shrink-0" style={{ borderTop: '1px solid var(--border-soft)' }}>
-        <div className="sidebar-footer-inner rounded-xl flex items-center gap-2"
-          style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', padding: '8px 10px' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow shrink-0" />
-          <div className="sidebar-footer-text min-w-0">
-            <p className="text-[10px] font-body leading-none" style={{ color: 'var(--text-muted)' }}>Backend</p>
-            <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>Render · Live</p>
+      {/* User info + logout */}
+      <div className="px-2 py-3 shrink-0 space-y-2" style={{ borderTop: '1px solid var(--border-soft)' }}>
+        {user && (
+          <div className="sidebar-footer-inner rounded-xl px-2.5 py-2"
+            style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
+            <div className="sidebar-footer-text">
+              <p className="text-[10px] font-display font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                {user.fullName}
+              </p>
+              <p className="text-[9px] font-body mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                {user.role} · {user.department || 'Campus'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+        <button onClick={logout}
+          className="sidebar-footer-inner w-full rounded-xl flex items-center gap-2 px-2.5 py-2 transition-all duration-150"
+          style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)', color: '#f87171' }}
+          title="Logout">
+          <LogOut size={14} className="shrink-0" />
+          <span className="sidebar-footer-text text-xs font-body">Logout</span>
+        </button>
       </div>
     </aside>
   )
